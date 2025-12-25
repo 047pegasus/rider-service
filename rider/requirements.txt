@@ -1,0 +1,9 @@
+djangorestframework
+psycopg2-binary
+python-dotenv
+django-cors-headers
+django-redis
+django-kafka
+drf-yasg
+django-filter
+channels[daphne]
