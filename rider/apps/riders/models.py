@@ -1,5 +1,6 @@
-from config.models import TimeStampedUUIDModel
 from django.db import models
+
+from apps.core.models import TimeStampedUUIDModel
 
 
 class Rider(TimeStampedUUIDModel):
@@ -34,7 +35,7 @@ class Rider(TimeStampedUUIDModel):
         return f"{self.name} - ({self.phone})"
 
 
-class RiderLocation(models.Model):
+class RiderLocation(TimeStampedUUIDModel):
     rider = models.ForeignKey(Rider, on_delete=models.CASCADE, related_name="locations")
     delivery = models.ForeignKey(
         "deliveries.Delivery",

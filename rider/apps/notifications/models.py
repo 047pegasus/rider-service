@@ -1,6 +1,6 @@
 from gzip import READ
 
-from config.models import TimeStampedUUIDModel
+from apps.core.models import TimeStampedUUIDModel
 from django.db import models
 
 

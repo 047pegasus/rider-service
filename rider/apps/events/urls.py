@@ -1,15 +1,15 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-# from .views import (
-#     EventViewSet,
-# )
+from .views import (
+    DeliveryEventViewSet,
+)
 
 app_name = "events"
 
 # Router for viewsets
 router = DefaultRouter()
-# router.register(r"", EventViewSet, basename="events")
+router.register(r"", DeliveryEventViewSet, basename="events")
 
 urlpatterns = [
     # ViewSet routes

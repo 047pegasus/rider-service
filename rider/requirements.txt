@@ -7,3 +7,4 @@ django-kafka
 drf-yasg
 django-filter
 channels[daphne]
+drf-nested-routers

@@ -13,7 +13,10 @@ class HealthCheckView(APIView):
 
     def get(self, request):
         return Response(
-            {"status": "healthy", "service": "delivery-tracking"},
+            {
+                "status": "healthy" if connection.is_connected() else "unhealthy",
+                "service": "delivery-tracking",
+            },
             status=status.HTTP_200_OK,
         )
 

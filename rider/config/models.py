@@ -1,6 +1,8 @@
 import uuid
+from decimal import DefaultContext
 
 from django.db import models
+from django.utils import timezone
 
 
 class TimeStampedModel(models.Model):
@@ -17,13 +19,6 @@ class UUIDModel(models.Model):
     """Abstract base model with UUID primary key"""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
-    class Meta:
-        abstract = True
-
-
-class TimeStampedUUIDModel(UUIDModel, TimeStampedModel):
-    """Abstract base model with both UUID and timestamps"""
 
     class Meta:
         abstract = True

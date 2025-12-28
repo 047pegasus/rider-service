@@ -1,3 +1,6 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import BatchDelivery, Delivery
+
+admin.site.register(Delivery)
+admin.site.register(BatchDelivery)

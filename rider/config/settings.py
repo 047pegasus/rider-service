@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import logging
 import os
 from pathlib import Path
 from urllib.parse import parse_qsl, urlparse
@@ -50,12 +51,10 @@ INSTALLED_APPS = [
     "corsheaders",
     # Local Apps
     "apps.deliveries",
-    "apps.analytics",
     "apps.events",
     "apps.notifications",
     "apps.orders",
     "apps.riders",
-    "apps.tracking",
 ]
 
 MIDDLEWARE = [
@@ -110,6 +109,50 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.JSONRenderer",
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
+        "simple": {"format": "%(levelname)s %(message)s"},
+    },
+    "handlers": {
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "django.log",
+            "maxBytes": 1024 * 1024 * 5,  # 5 MB
+            "backupCount": 3,
+            "formatter": "verbose",
+        },
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+        },
+        "config": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["mail_admins"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
 }
 
 CORS_ALLOWED_ORIGINS = [
