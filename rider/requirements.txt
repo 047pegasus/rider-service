@@ -6,5 +6,6 @@ django-redis
 django-kafka
 drf-yasg
 django-filter
+channels
 channels[daphne]
 drf-nested-routers
