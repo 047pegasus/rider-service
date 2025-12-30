@@ -93,3 +93,6 @@ def update_key_ttl(key, ttl):
     except Exception as e:
         logger.error(f"Cache TTL update error for key: {key}, error: {e}")
         raise ValueError(f"Cache TTL update error for key: {key}, error: {e}")
+
+
+redis_client = RedisClient().client

@@ -23,7 +23,7 @@ class KafkaClient:
 
     def publish(self, topic: str, event_data: dict):
         try:
-            self.producer.produce(topic, value=json.dumps(event_data).encode("utf-8"))
+            self.producer.send(topic, value=json.dumps(event_data).encode("utf-8"))
             self.producer.flush()
         except KafkaError as e:
             return False
@@ -31,3 +31,6 @@ class KafkaClient:
     def close(self):
         self.producer.flush()
         self.consumer.close()
+
+
+kafka_client = KafkaClient()
