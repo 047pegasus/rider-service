@@ -1,5 +1,6 @@
 import logging
 
+import redis
 from django.conf import settings
 from django.core.cache import cache
 from django_redis import get_redis_connection
@@ -7,6 +8,16 @@ from django_redis import get_redis_connection
 logger = logging.getLogger(__name__)
 
 redis_conn = get_redis_connection("default")
+
+
+class RedisClient:
+    def __init__(self):
+        self.client = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            decode_responses=True,
+        )
 
 
 def check_cache_connection():

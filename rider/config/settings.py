@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import logging
 import os
+import socket
 from pathlib import Path
 from urllib.parse import parse_qsl, urlparse
 
@@ -45,7 +46,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.postgres",
     "rest_framework",
-    "django_kafka",
     "drf_yasg",
     "django_filters",
     "corsheaders",
@@ -188,15 +188,13 @@ CACHES = {
     }
 }
 
-DJANGO_KAFKA = {
-    "GLOBAL_CONFIG": {
-        "bootstrap.servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS"),
-        "consumer": {
-            "group.id": os.getenv("KAFKA_CONSUMER_GROUP_ID"),
-            "auto.offset.reset": os.getenv("KAFKA_CONSUMER_AUTO_OFFSET_RESET"),
-        },
-    },
-}
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
+REDIS_DB = os.getenv("REDIS_DB")
+
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
+KAFKA_CLIENT_ID = socket.gethostname()
+KAFKA_GROUP_ID = os.getenv("KAFKA_CONSUMER_GROUP_ID")
 
 # Channels (WebSocket)
 ASGI_APPLICATION = "config.asgi.application"
@@ -243,4 +241,4 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "static/"  
+STATIC_URL = "static/"

@@ -13,3 +13,4 @@ class RiderConsumer(AsyncWebsocketConsumer):
 
     async def send_message(self, event):
         await self.send(text_data=event["text"])
+ 
