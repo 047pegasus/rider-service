@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional,Set
 
 from confluent_kafka.error import KafkaError
 from infrastructure.cache import redis_client

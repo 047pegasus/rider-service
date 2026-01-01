@@ -2,7 +2,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from rider.apps.riders.services import rider_service
+from apps.riders.services import rider_service
 
 from .models import Rider
 from .serializers import RiderSerializer

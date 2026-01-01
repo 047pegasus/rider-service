@@ -2,7 +2,6 @@ import json
 from typing import Any, Dict, Optional
 import math
 from infrastructure.cache import redis_client
-from apps.
 from apps.riders.models import Rider
 from apps.riders.services import rider_service
 from apps.orders.models import Order
@@ -116,9 +115,9 @@ class DeliveryService:
             with transaction.atomic():
                 delivery = Delivery.objects.select_for_update().get(id=delivery_id)
                 old_status = delivery.status
-                deliveyr_status = new_status
+                delivery.status = new_status
 
-                if new_status == 'completed'
+                if new_status == 'completed':
                     delivery.completed_at = timezone.now()
                     rider_service.remove_active_delivery(str(delivery.rider.id), str(delivery.id))
                     delivery.rider.current_status = 'available'

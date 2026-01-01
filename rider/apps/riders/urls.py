@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 # from rest_framework_nested.routers import NestedDefaultRouter
 from .views import (
-    RiderLocationsViewSet,
+    # RiderLocationsViewSet,
     RiderViewSet,
 )
 
@@ -14,7 +14,7 @@ router = DefaultRouter()
 router.register(r"", RiderViewSet, basename="rider")
 
 # rider_location_router = NestedDefaultRouter(router, r"rider", lookup="rider")
-router.register(r"locations", RiderLocationsViewSet, basename="rider-location")
+# router.register(r"locations", RiderLocationsViewSet, basename="rider-location")
 
 urlpatterns = [
     path("", include(router.urls)),
