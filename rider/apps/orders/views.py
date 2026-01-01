@@ -74,7 +74,7 @@ class OrderViewSet(viewsets.ViewSet):
             ]
         )
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["put"])
     def update_status(self, request, pk=None):
         new_status = request.data.get("status")
         delivery_id = request.data.get("delivery_id")

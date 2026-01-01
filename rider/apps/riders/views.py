@@ -31,7 +31,7 @@ class RiderViewSet(viewsets.ViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["put"])
     def update_location(self, request, pk=None):
         try:
             location_data = request.data

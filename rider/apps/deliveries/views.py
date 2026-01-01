@@ -45,7 +45,7 @@ class DeliveryViewSet(viewsets.ViewSet):
                 {"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["put"])
     def update_status(self, request, pk=None):
         try:
             new_status = request.data.get("status")

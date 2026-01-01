@@ -13,5 +13,4 @@ router.register(r"", DeliveryViewSet, basename="deliveries")
 urlpatterns = [
     # ViewSet routes
     path("", include(router.urls)),
-    # Custom endpoints
 ]

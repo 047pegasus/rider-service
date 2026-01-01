@@ -1,6 +1,6 @@
-import redis
 from django.core.cache import cache
 from django.db import connection
+from infrastructure.kafka_client import kafka_client
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,7 +14,7 @@ class HealthCheckView(APIView):
     def get(self, request):
         return Response(
             {
-                "status": "healthy" if connection.is_connected() else "unhealthy",
+                "status": "healthy" if connection else "unhealthy",
                 "service": "delivery-tracking",
             },
             status=status.HTTP_200_OK,
@@ -30,6 +30,7 @@ class ReadinessCheckView(APIView):
         checks = {
             "database": self._check_database(),
             "redis": self._check_redis(),
+            "kafka": self._check_kafka(),
         }
 
         all_healthy = all(checks.values())
@@ -53,4 +54,12 @@ class ReadinessCheckView(APIView):
             cache.set("health_check", "ok", 10)
             return cache.get("health_check") == "ok"
         except Exception:
+            return False
+
+    def _check_kafka(self):
+        try:
+            kafka_client.publish("health_check", dict(status="ok"))
+            return True
+        except Exception as e:
+            print(f"Kafka error: {e}")
             return False
