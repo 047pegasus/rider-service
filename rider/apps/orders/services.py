@@ -99,3 +99,6 @@ class OrderService:
 
         except Order.DoesNotExist:
             return None
+
+
+order_service = OrderService()
