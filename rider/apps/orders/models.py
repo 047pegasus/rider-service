@@ -8,6 +8,7 @@ class Order(TimeStampedUUIDModel):
         ("accepted", "Accepted"),
         ("preparing", "Preparing"),
         ("ready", "Ready"),
+        ("assigned", "Assigned"),  # Rider assigned and on the way to pickup
         ("picked_up", "Picked Up"),
         ("in_transit", "In Transit"),
         ("delivered", "Delivered"),
@@ -36,6 +37,10 @@ class Order(TimeStampedUUIDModel):
     estimated_delivery_time = models.DateTimeField(null=True, blank=True)
     actual_delivery_time = models.DateTimeField(null=True, blank=True)
     special_instructions = models.TextField(null=True, blank=True)
+    denial_count = models.IntegerField(default=0, help_text='Number of times delivery was denied by riders')
+    payment_completed = models.BooleanField(default=False, help_text='Whether payment has been completed')
+    assignment_retry_count = models.IntegerField(default=0, help_text='Number of times assignment was retried')
+    last_assignment_retry_at = models.DateTimeField(null=True, blank=True, help_text='Last time assignment was retried')
 
     class Meta:
         db_table = "orders"

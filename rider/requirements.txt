@@ -7,5 +7,8 @@ drf-yasg
 django-filter
 channels
 channels[daphne]
+channels-redis
 drf-nested-routers
 confluent-kafka
+geopy
+requests

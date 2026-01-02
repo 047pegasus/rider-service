@@ -35,22 +35,54 @@ class RiderViewSet(viewsets.ViewSet):
     def update_location(self, request, pk=None):
         try:
             location_data = request.data
-            delivery_id = request.data.get("delivery_id")
-            if not delivery_id:
-                return Response(
-                    {"error": "Delivery ID is required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            delivery_id = request.data.get("delivery_id")  # Optional for location updates
+            
             location = rider_service.update_rider_location(
                 rider_id=pk, location_data=location_data, delivery_id=delivery_id
             )
             return Response(
                 {
                     "message": "Location updated successfully",
-                    "timestamp": location.timestamp,
+                    "timestamp": location.timestamp.isoformat() if location else None,
                 },
                 status=status.HTTP_200_OK,
             )
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=["get"])
+    def active_deliveries(self, request, pk=None):
+        """Get active deliveries for a rider"""
+        try:
+            from apps.deliveries.models import Delivery
+            from apps.deliveries.serializers import DeliverySerializer
+            
+            deliveries = Delivery.objects.filter(
+                rider_id=pk
+            ).exclude(status__in=["completed", "failed"]).select_related('order')
+            
+            delivery_data = []
+            for delivery in deliveries:
+                delivery_data.append({
+                    "delivery_id": str(delivery.id),
+                    "order_id": str(delivery.order.id),
+                    "order_number": delivery.order.order_number,
+                    "status": delivery.status,
+                    "pickup_location": {
+                        "address": delivery.order.pickup_address,
+                        "lat": float(delivery.order.pickup_lat) if delivery.order.pickup_lat else None,
+                        "lng": float(delivery.order.pickup_lng) if delivery.order.pickup_lng else None,
+                    },
+                    "delivery_location": {
+                        "address": delivery.order.delivery_address,
+                        "lat": float(delivery.order.delivery_lat) if delivery.order.delivery_lat else None,
+                        "lng": float(delivery.order.delivery_lng) if delivery.order.delivery_lng else None,
+                    },
+                })
+            
+            return Response(delivery_data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -61,10 +93,19 @@ class RiderViewSet(viewsets.ViewSet):
         try:
             location = rider_service.get_rider_location(rider_id=pk)
             if not location:
-                return Response(
-                    {"error": "Location not available !!"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+                # Try to get from database
+                location = rider_service.get_rider_current_location(pk)
+                if not location:
+                    # Return default location if none exists
+                    return Response({
+                        "lat": 28.6139,
+                        "lng": 77.2090,
+                        "timestamp": None,
+                        "accuracy": None,
+                        "speed": None,
+                        "heading": None,
+                        "battery_level": None,
+                    })
             return Response(location)
         except Exception as e:
             return Response(

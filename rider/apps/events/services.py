@@ -58,7 +58,7 @@ class EventService:
 
                 topic = KAFKA_TOPICS.get("DELIVERY_STATUS_CHANGED")
                 kafka_client.publish(topic=topic, event_data=kafka_msg)
-                mark_event_processed(event_id)
+                mark_event_processed(str(event.id))
                 return event
 
         except Exception as e:

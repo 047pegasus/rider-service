@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, Optional,Set
+from typing import Any, Dict, Optional, Set
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from confluent_kafka.error import KafkaError
 from infrastructure.cache import redis_client
@@ -19,12 +21,17 @@ class RiderService:
         redis_client.setex(key, ttl, json.dumps(location_data))
 
     def get_rider_location(self, rider_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get rider location from cache first, then fallback to database.
+        This ensures location persists across restarts.
+        """
         key = f"rider:location:{rider_id}"
         data = redis_client.get(key)
         if data:
             return json.loads(data)
         else:
-            return None
+            # Fallback to database - get latest location
+            return self.get_rider_current_location(rider_id)
 
     # Active Delivery-Rider Cache methods:
     def add_active_delivery(self, rider_id: str, delivery_id: str, ttl: int = 7200):
@@ -81,8 +88,47 @@ class RiderService:
                 "timestamp": datetime.now().isoformat(),
             }
 
-            topic = (KAFKA_TOPICS.get("RIDER_LOCATION_UPDATE"),)
-            kafka_client.publish(topic, kafka_msg)
+            topic = KAFKA_TOPICS.get("RIDER_LOCATION_UPDATE")
+            if topic:
+                # Use rider_id as partition key for consistent ordering per rider
+                kafka_client.publish(topic, kafka_msg, key=str(rider_id))
+
+            # Send WebSocket notification for location updates
+            if delivery_id:
+                # Notify order channel about rider location
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    # Find order for this delivery
+                    from apps.deliveries.models import Delivery
+                    try:
+                        delivery = Delivery.objects.get(id=delivery_id)
+                        async_to_sync(channel_layer.group_send)(
+                            f"order_{delivery.order.id}",
+                            {
+                                "type": "location_update",
+                                "data": {
+                                    "rider_id": str(rider_id),
+                                    "location": cache_data_value,
+                                    "delivery_id": str(delivery_id)
+                                }
+                            }
+                        )
+                    except Delivery.DoesNotExist:
+                        pass
+                
+                # Notify rider channel
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        f"rider_{rider_id}",
+                        {
+                            "type": "location_update",
+                            "data": {
+                                "location": cache_data_value,
+                                "delivery_id": str(delivery_id)
+                            }
+                        }
+                    )
 
             return location
 
@@ -94,10 +140,28 @@ class RiderService:
             return None
 
     def get_rider_current_location(self, rider_id):
+        """
+        Get rider's current location from database (latest RiderLocation entry).
+        This is the source of truth for persistent location.
+        """
         try:
-            location = self.get_rider_location(str(rider_id))
-            if location:
-                return location
+            # First check if there's an active delivery with last location
+            from apps.deliveries.models import Delivery
+            active_delivery = Delivery.objects.filter(
+                rider_id=rider_id,
+                status__in=['assigned', 'accepted', 'in_progress', 'collected']
+            ).exclude(
+                last_location_lat__isnull=True
+            ).order_by('-updated_at').first()
+            
+            if active_delivery and active_delivery.last_location_lat:
+                return {
+                    "lat": float(active_delivery.last_location_lat),
+                    "lng": float(active_delivery.last_location_lng),
+                    "timestamp": active_delivery.updated_at.isoformat(),
+                }
+            
+            # Fallback to latest RiderLocation entry
             try:
                 db_location = RiderLocation.objects.filter(rider_id=rider_id).latest(
                     "timestamp"
@@ -106,17 +170,21 @@ class RiderService:
                     "lat": float(db_location.lat),
                     "lng": float(db_location.lng),
                     "timestamp": db_location.timestamp.isoformat(),
+                    "accuracy": float(db_location.accuracy) if db_location.accuracy else None,
+                    "speed": float(db_location.speed) if db_location.speed else None,
+                    "heading": float(db_location.heading) if db_location.heading else None,
+                    "battery_level": db_location.battery_level,
                 }
             except RiderLocation.DoesNotExist:
                 return None
             except Exception as e:
+                print(f"Error getting location from DB: {e}")
                 return None
-        except Rider.DoesNotExist:
-            return None
         except Exception as e:
+            print(f"Error in get_rider_current_location: {e}")
             return None
 
-    def get_rider_location_history(self, rider_id):
+    def get_rider_location_history(self, rider_id, limit=10):
         try:
             locations = RiderLocation.objects.filter(rider_id=rider_id).order_by(
                 "-timestamp"

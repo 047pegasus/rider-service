@@ -15,10 +15,43 @@ class OrderService:
     def create_order(order_data):
         try:
             with transaction.atomic():
+                # Set initial status to preparing
+                order_data['status'] = 'preparing'
                 order = Order.objects.create(**order_data)
-                # event_service.create_event(EventTypes.ORDER_RECEIVED, order.id)
+                
+                # Simulate order preparation time (30-60 seconds)
+                import threading
+                import time
+                import random
+                from django.utils import timezone
+                
+                def mark_ready():
+                    prep_time = random.randint(30, 60)
+                    time.sleep(prep_time)
+                    try:
+                        order.refresh_from_db()
+                        if order.status == 'preparing':
+                            order.status = 'ready'
+                            order.save()
+                            # Auto-assign rider when order is ready
+                            from apps.deliveries.models import Delivery
+                            if not Delivery.objects.filter(order=order).exclude(status__in=['failed', 'completed']).exists():
+                                from apps.deliveries.services import delivery_service
+                                try:
+                                    delivery_service.assign_delivery(str(order.id))
+                                except Exception as e:
+                                    print(f"Auto-assignment failed: {e}")
+                                    # Order will be retried by the retry_unassigned_orders command
+                    except Exception as e:
+                        print(f"Error in mark_ready: {e}")
+                
+                # Start preparation timer in background
+                prep_thread = threading.Thread(target=mark_ready, daemon=True)
+                prep_thread.start()
+                
                 return order
         except Exception as e:
+            print(f"Error creating order: {e}")
             return None
 
     @staticmethod
@@ -65,22 +98,27 @@ class OrderService:
     def get_order_tracking_info(order_id):
         try:
             order = Order.objects.get(id=order_id)
+            # Check for any active delivery (assigned, in_progress, etc.)
             delivery = Delivery.objects.filter(
-                order_id=order_id, status="in_progress"
-            ).first()
+                order_id=order_id
+            ).exclude(status__in=["completed", "failed"]).first()
+            
             if not delivery:
                 return {
                     "order": order,
+                    "order_number": order.order_number,
                     "status": order.status,
                     "delivery": None,
                     "rider": None,
                     "current_location": None,
+                    "estimated_delivery": order.estimated_delivery_time,
                 }
 
             rider_location = rider_service.get_rider_location(str(delivery.rider_id))
             if rider_location:
                 return {
                     "order": order,
+                    "order_number": order.order_number,
                     "status": order.status,
                     "delivery": delivery,
                     "rider": delivery.rider,
@@ -90,6 +128,7 @@ class OrderService:
             else:
                 return {
                     "order": order,
+                    "order_number": order.order_number,
                     "status": order.status,
                     "delivery": delivery,
                     "rider": delivery.rider,
